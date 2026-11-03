@@ -12,15 +12,113 @@
   width: 100%;
 }
 
+.level-select__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 .level-select__title {
-  margin: 0 0 12px;
+  margin: 0 0 6px;
   font-size: 26px;
 }
 
 .level-select__hint {
-  margin: 0 0 24px;
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 14px;
+}
+
+/* Tabs */
+.level-select__tabs {
+  display: flex;
+  background: var(--color-border);
+  padding: 4px;
+  border-radius: 8px;
+  gap: 4px;
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: var(--color-text);
+}
+
+.tab-btn--active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tab-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+/* Arduino Panel */
+.arduino-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.arduino-panel__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arduino-panel__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.arduino-panel__desc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.arduino-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn--outline-dark {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn--outline-dark:hover {
+  background: var(--color-border);
 }
 
 .level-grid {
@@ -39,6 +137,7 @@
   flex-direction: column;
   gap: 6px;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  cursor: pointer;
 }
 
 .level-card:hover {
@@ -49,6 +148,11 @@
 
 .level-card--done {
   border-color: var(--color-box-done);
+}
+
+.level-card--active-uno {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px #22c55e, 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
 .level-card__top {
@@ -63,6 +167,12 @@
   color: var(--color-text);
 }
 
+.level-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .level-card__badge {
   font-size: 11px;
   font-weight: 700;
@@ -70,6 +180,10 @@
   background: var(--color-box-done);
   padding: 2px 8px;
   border-radius: 999px;
+}
+
+.level-card__badge--uno {
+  background: #16a34a;
 }
 
 .level-card__name {

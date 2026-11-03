@@ -3,6 +3,7 @@ import { useSokoban } from '../../hooks/useSokoban.ts';
 import type { Direction, LevelDefinition, LevelProgress, LevelRecord } from '../../game/types.ts';
 import { parseLevel } from '../../game/engine.ts';
 import { solve } from '../../game/solver.ts';
+import { useArduino } from '../../context/useArduino';
 import { Board } from '../Board/Board.tsx';
 import { Sidebar } from '../Sidebar/Sidebar.tsx';
 import { WinModal } from '../Modal/WinModal.tsx';
@@ -59,6 +60,9 @@ export function GameScreen({
     null,
   );
 
+  const { notifyMove, notifyUndo, notifyReset, subscribeToGameEvents } = useArduino();
+  const isExternalMoveRef = useRef(false);
+
   useEffect(() => {
     previousBestRef.current = getProgress(level.id).bestMoves;
     setWinInfo(null);
@@ -85,8 +89,62 @@ export function GameScreen({
     handleMoveRef.current = handleMove;
   }, [handleMove]);
 
-  // Auto-play: um único timeout por passo, recriado a cada mudança da fila. O
-  // cleanup cancela o timer pendente ao esvaziar, reiniciar, vencer ou desmontar.
+  // Movimento com suporte a Anti-Eco
+  const handleMoveWithUno = useCallback(
+    (direction: Direction, fromExternal = false) => {
+      if (fromExternal) {
+        isExternalMoveRef.current = true;
+        handleMove(direction);
+        isExternalMoveRef.current = false;
+      } else {
+        handleMove(direction);
+        notifyMove(direction);
+      }
+    },
+    [handleMove, notifyMove],
+  );
+
+  // Reinício com notificação serial
+  const handleRestart = useCallback(() => {
+    setAutoPlayQueue(null);
+    restart();
+  }, [restart]);
+
+  const handleUserRestart = useCallback(() => {
+    handleRestart();
+    notifyReset();
+  }, [handleRestart, notifyReset]);
+
+  // Desfazer com notificação serial
+  const handleUndo = useCallback(() => {
+    setAutoPlayQueue(null);
+    undo();
+  }, [undo]);
+
+  const handleUserUndo = useCallback(() => {
+    handleUndo();
+    notifyUndo();
+  }, [handleUndo, notifyUndo]);
+
+  // Assinatura de eventos gerados pelo hardware (botões físicos)
+  useEffect(() => {
+    const unsubscribe = subscribeToGameEvents((event) => {
+      if (event.type === 'move') {
+        handleMoveWithUno(event.direction, true);
+      } else if (event.type === 'undo') {
+        handleUndo();
+      } else if (event.type === 'reset') {
+        handleRestart();
+      } else if (event.type === 'win') {
+        // Vitória sinalizada pelo Uno
+      }
+    });
+
+    return unsubscribe;
+  }, [subscribeToGameEvents, handleMoveWithUno, handleUndo, handleRestart]);
+
+  // Auto-play do Resolvedor (A*):
+  // Cada passo da fila executa localmente e emite simultaneamente MV:<dir> ao Uno
   useEffect(() => {
     if (autoPlayQueue === null) return;
     if (autoPlayQueue.length === 0 || status !== 'playing') {
@@ -98,20 +156,11 @@ export function GameScreen({
       const [nextDirection, ...rest] = autoPlayQueue;
       setAutoPlayQueue(rest.length > 0 ? rest : null);
       handleMoveRef.current(nextDirection);
+      notifyMove(nextDirection);
     }, AUTO_PLAY_STEP_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [autoPlayQueue, status]);
-
-  const handleRestart = useCallback(() => {
-    setAutoPlayQueue(null);
-    restart();
-  }, [restart]);
-
-  const handleUndo = useCallback(() => {
-    setAutoPlayQueue(null);
-    undo();
-  }, [undo]);
+  }, [autoPlayQueue, status, notifyMove]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -131,18 +180,18 @@ export function GameScreen({
 
       if (event.key in KEY_MAP) {
         event.preventDefault();
-        handleMove(KEY_MAP[event.key]);
+        handleMoveWithUno(KEY_MAP[event.key]);
         return;
       }
 
       switch (event.key.toLowerCase()) {
         case 'z':
           event.preventDefault();
-          handleUndo();
+          handleUserUndo();
           break;
         case 'r':
           event.preventDefault();
-          handleRestart();
+          handleUserRestart();
           break;
         case 'escape':
           event.preventDefault();
@@ -155,7 +204,7 @@ export function GameScreen({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeModal, handleMove, handleRestart, handleUndo, isAutoPlaying, status, onBackToLevels]);
+  }, [activeModal, handleMoveWithUno, handleUserRestart, handleUserUndo, isAutoPlaying, status, onBackToLevels]);
 
   const progress = getProgress(level.id);
   const rankings = getRankings(level.id);
@@ -180,8 +229,8 @@ export function GameScreen({
           canUndo={canUndo}
           hasWon={status === 'won'}
           hasNextLevel={hasNextLevel}
-          onUndo={handleUndo}
-          onRestart={handleRestart}
+          onUndo={handleUserUndo}
+          onRestart={handleUserRestart}
           onNextLevel={onNextLevel}
           onShowRankings={() => setActiveModal('ranking')}
           onShowSolution={() => {
@@ -198,7 +247,7 @@ export function GameScreen({
           timeMs={winInfo.timeMs}
           isNewRecord={winInfo.isNewRecord}
           hasNextLevel={hasNextLevel}
-          onRepeat={handleRestart}
+          onRepeat={handleUserRestart}
           onBackToLevels={onBackToLevels}
           onShowRankings={() => setActiveModal('ranking')}
           onNextLevel={onNextLevel}
@@ -233,7 +282,7 @@ export function GameScreen({
           onClose={() => setActiveModal(null)}
           onApplySolution={(directions, options) => {
             setActiveModal(null);
-            if (options?.restartFirst) restart();
+            if (options?.restartFirst) handleUserRestart();
             setAutoPlayQueue(directions);
           }}
         />
