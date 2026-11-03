@@ -1,66 +1,7 @@
 import type { Direction, LevelDefinition } from './types';
 
-/**
- * Os 4 níveis gravados na memória Flash do Arduino Uno (definidos em PROGMEM).
- */
-export const DEFAULT_ARDUINO_LEVELS: LevelDefinition[] = [
-  {
-    id: 'UNO:1',
-    name: 'Arduino Fase 1',
-    rows: [
-      '########',
-      '#      #',
-      '#  $   #',
-      '#  .   #',
-      '#  @   #',
-      '#      #',
-      '#      #',
-      '########',
-    ],
-  },
-  {
-    id: 'UNO:2',
-    name: 'Arduino Fase 2',
-    rows: [
-      '########',
-      '#      #',
-      '#  .   #',
-      '#  $   #',
-      '#  $   #',
-      '#  @   #',
-      '#  .   #',
-      '########',
-    ],
-  },
-  {
-    id: 'UNO:3',
-    name: 'Arduino Fase 3',
-    rows: [
-      '########',
-      '#  .   #',
-      '#  ##$ #',
-      '#  #   #',
-      '#  $ . #',
-      '#  #   #',
-      '#  @   #',
-      '########',
-    ],
-  },
-  {
-    id: 'UNO:4',
-    name: 'Arduino Fase 4',
-    rows: [
-      '########',
-      '# .$ . #',
-      '#  $   #',
-      '#  ##  #',
-      '#      #',
-      '#   @  #',
-      '#      #',
-      '########',
-    ],
-  },
-];
+
+export const DEFAULT_ARDUINO_LEVELS: LevelDefinition[] = [];
 
 /**
  * Formata um nível do Sokoban para a matriz física 8x8 do Arduino Uno.

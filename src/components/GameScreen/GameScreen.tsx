@@ -14,7 +14,7 @@ import { Header } from '../Header/Header.tsx';
 import './GameScreen.css';
 
 /** Intervalo entre os movimentos executados automaticamente pela solução (450ms para sincronia perfeita com a matriz LED). */
-const AUTO_PLAY_STEP_MS = 450;
+const AUTO_PLAY_STEP_MS = 750;
 
 const KEY_MAP: Record<string, Direction> = {
   ArrowUp: 'up',
@@ -97,8 +97,8 @@ export function GameScreen({
         handleMove(direction);
         isExternalMoveRef.current = false;
       } else {
-        handleMove(direction);
         notifyMove(direction);
+        handleMove(direction);
       }
     },
     [handleMove, notifyMove],
@@ -155,8 +155,8 @@ export function GameScreen({
     const timeoutId = window.setTimeout(() => {
       const [nextDirection, ...rest] = autoPlayQueue;
       setAutoPlayQueue(rest.length > 0 ? rest : null);
-      handleMoveRef.current(nextDirection);
       notifyMove(nextDirection);
+      handleMoveRef.current(nextDirection);
     }, AUTO_PLAY_STEP_MS);
 
     return () => window.clearTimeout(timeoutId);
