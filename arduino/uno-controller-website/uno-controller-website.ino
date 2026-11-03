@@ -749,7 +749,7 @@ void stepWinAnimation() {
   strip.show();
   winJ += 4;
 
-  if (winJ >= 256 * 3) {
+  if (winJ >= 256) {
     winAnimating = false;
     strip.setBrightness(BRIGHTNESS);
     // Se conectado ao site ou em fase remota, mantem o nivel atual para aguardar
