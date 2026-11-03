@@ -1,0 +1,453 @@
+=====================================================================
+ SOKOBAN - ROTEIRO DE TESTES PELO MONITOR SERIAL (Arduino IDE)
+=====================================================================
+
+PREPARACAO
+----------
+1. Faca o upload de uno-controller-website.ino no Arduino Uno.
+2. Abra o Monitor Serial (Ctrl+Shift+M).
+3. Configure no canto inferior direito do Monitor:
+     - Velocidade:  115200 baud
+     - Fim de linha: "Newline" (Nova linha)   <-- OBRIGATORIO
+4. Ligue a chave do pino D9 (nivel HIGH). Sem a chave ligada o jogo
+   fica pausado e a matriz apagada.
+   (Atencao: D9 e INPUT sem pull-up. Se nao houver chave ligada,
+    o pino fica flutuando; ligue D9 em 5V ou GND via chave.)
+5. Abrir o Monitor Serial reinicia o Uno. Voce deve ver:
+
+     INFO:Sokoban Uno Standalone Iniciado.
+     INFO:Chave ON -> Jogo iniciado do zero.
+     SYNC:NATIVE,1,0
+
+   e a fase 1 aparecendo na matriz de LEDs.
+
+COMO LER ESTE ROTEIRO
+---------------------
+  >> texto      = o que VOCE digita no campo de envio e aperta Enter
+  << texto      = o que o Arduino deve responder (aparece no Monitor)
+  (nada)        = o Arduino NAO responde nada na Serial (olhe a matriz)
+
+Os comandos sao MAIUSCULOS e nao podem ter espaco sobrando.
+Linhas "INFO:..." sao so depuracao e podem aparecer a qualquer hora.
+
+
+=====================================================================
+ TESTE 1 - SINCRONIZACAO (SYNC)
+=====================================================================
+>> SYNC
+<< SYNC:NATIVE,1,0
+
+   Formato: SYNC:<origem>,<id da fase>,<qtd de movimentos>
+
+
+=====================================================================
+ TESTE 2 - EXPORTAR FASES NATIVAS (GET_MAP)
+=====================================================================
+>> GET_MAP:1
+<< MAP_START:NATIVE,1
+<< MAP_ROW:0,########
+<< MAP_ROW:1,#      #
+<< MAP_ROW:2,#  $   #
+<< MAP_ROW:3,#  .   #
+<< MAP_ROW:4,#  @   #
+<< MAP_ROW:5,#      #
+<< MAP_ROW:6,#      #
+<< MAP_ROW:7,########
+<< MAP_END
+
+   Confira que as 8 linhas sao iguais a fase 1 do codigo.
+
+>> GET_MAP:2
+   (deve devolver MAP_START:NATIVE,2 ... MAP_END)
+>> GET_MAP:3
+>> GET_MAP:4
+   (idem para 3 e 4)
+
+>> GET_MAP:9
+<< MAP_ERR
+   (id invalido)
+
+>> GET_MAP:0
+<< MAP_ERR
+
+
+=====================================================================
+ TESTE 3 - MOVIMENTO PELA SERIAL (sem eco)
+=====================================================================
+Garanta que esta na fase 1 (se nao estiver, envie RESET antes).
+Jogador comeca na coluna 3, linha 4.
+
+>> MV:R
+(nada)    -> jogador (vermelho) anda 1 casa p/ a direita na matriz
+>> SYNC
+<< SYNC:NATIVE,1,1
+
+>> MV:L
+(nada)    -> jogador volta
+>> SYNC
+<< SYNC:NATIVE,1,2
+
+>> RESET
+(nada)    -> fase reinicia
+>> SYNC
+<< SYNC:NATIVE,1,0
+
+   IMPORTANTE: MV recebido pela Serial NAO gera "MV:" de volta.
+   Se voce visse "MV:R" ecoando, seria erro (anti-eco).
+
+Teste de parede - leve o jogador ate a parede esquerda:
+>> MV:L
+>> MV:L
+>> MV:L
+>> SYNC
+<< SYNC:NATIVE,1,2
+   (o jogador chega em x=1; o 3o MV:L bate na parede, e bloqueado,
+    nao conta como movimento e nao gera nenhuma resposta)
+
+>> RESET
+
+
+=====================================================================
+ TESTE 3B - LER O ESTADO ATUAL (GET_STATE)
+=====================================================================
+GET_MAP mostra sempre o layout INICIAL. GET_STATE mostra o tabuleiro
+como esta AGORA (jogador, caixas, destinos).
+
+>> RESET
+>> GET_STATE
+<< STATE_START:NATIVE,1,0
+<< STATE_ROW:0,########
+<< STATE_ROW:1,#      #
+<< STATE_ROW:2,#  $   #
+<< STATE_ROW:3,#  .   #
+<< STATE_ROW:4,#  @   #
+<< STATE_ROW:5,#      #
+<< STATE_ROW:6,#      #
+<< STATE_ROW:7,########
+<< STATE_END
+
+>> MV:U
+>> MV:U
+>> GET_STATE
+<< STATE_START:NATIVE,1,2
+<< STATE_ROW:0,########
+<< STATE_ROW:1,#  $   #
+<< STATE_ROW:2,#  @   #
+<< STATE_ROW:3,#  .   #
+<< STATE_ROW:4,#      #
+<< STATE_ROW:5,#      #
+<< STATE_ROW:6,#      #
+<< STATE_ROW:7,########
+<< STATE_END
+
+   Simbolos: @ jogador | + jogador sobre destino | $ caixa |
+   * caixa no destino | . destino vazio | # parede | espaco = chao.
+   Confira que a posicao do @ e do $ bate com a matriz de LEDs.
+
+>> RESET
+
+
+=====================================================================
+ TESTE 3C - TROCAR DE FASE (SET_LEVEL)
+=====================================================================
+>> SET_LEVEL:3
+<< LEVEL_OK
+>> SYNC
+<< SYNC:NATIVE,3,0
+   (matriz mostra a fase 3)
+
+>> SET_LEVEL:2
+<< LEVEL_OK
+>> GET_STATE
+<< STATE_START:NATIVE,2,0
+   ... (8 linhas) ... STATE_END
+
+>> SET_LEVEL:9
+<< LEVEL_ERR
+>> SET_LEVEL:0
+<< LEVEL_ERR
+>> SET_LEVEL:CUSTOM
+<< LEVEL_ERR
+   (ERR enquanto nenhuma fase foi enviada por SET_MAP; depois do
+    Teste 7.1 ele responde LEVEL_OK e SYNC mostra SYNC:CUSTOM,5,0)
+
+>> SET_LEVEL:1
+
+
+=====================================================================
+ TESTE 4 - DESFAZER (UNDO) COM EMPURRAO DE CAIXA
+=====================================================================
+Fase 1: caixa em (3,2), destino em (3,3), jogador em (3,4).
+Subir 1 casa deixa o jogador SOBRE o destino (amarelo pulsante).
+Subir de novo empurra a caixa para cima.
+
+>> RESET
+>> MV:U
+(nada)    -> jogador amarelo (em cima do destino verde)
+>> MV:U
+(nada)    -> caixa empurrada para (3,1); jogador em (3,2)
+>> SYNC
+<< SYNC:NATIVE,1,2
+
+>> MV:U
+(nada)    -> BLOQUEADO (caixa bateria na parede do topo)
+>> SYNC
+<< SYNC:NATIVE,1,2        (continua 2)
+
+>> UNDO
+(nada)    -> caixa volta p/ (3,2); jogador volta p/ cima do destino
+             (amarelo)
+>> SYNC
+<< SYNC:NATIVE,1,1
+
+>> UNDO
+(nada)    -> jogador volta p/ (3,4), destino volta a ficar verde
+>> SYNC
+<< SYNC:NATIVE,1,0
+
+>> UNDO
+(nada)    -> sem historico, nada acontece
+>> SYNC
+<< SYNC:NATIVE,1,0
+
+
+=====================================================================
+ TESTE 5 - VITORIA (WIN)
+=====================================================================
+Fase 1: empurrar a caixa para baixo ate o destino.
+Caminho: contornar a caixa por cima (6 movimentos).
+
+>> RESET
+>> MV:L
+>> MV:U
+>> MV:U
+>> MV:U
+>> MV:R
+>> MV:D
+<< WIN:NATIVE,1
+
+   Em seguida: animacao arco-iris na matriz (~2 s). Durante ela,
+   comandos MV/UNDO/RESET sao ignorados. Ao terminar:
+
+<< SYNC:NATIVE,2,0
+
+   (avancou para a fase nativa 2)
+
+Para voltar a fase 1:  desligue e ligue a chave D9, ou use uma
+fase customizada (Teste 7).
+
+
+=====================================================================
+ TESTE 6 - COMANDOS INVALIDOS / IGNORADOS
+=====================================================================
+>> OLA
+(nada)    -> comando desconhecido e ignorado
+>> mv:u
+(nada)    -> minusculas nao sao aceitas
+>> MV:X
+(nada)    -> direcao invalida, ignorada
+>> MAP_ROW:0,########
+<< MAP_ERR                (MAP_ROW sem SET_MAP antes)
+>> MAP_LOAD
+<< MAP_ERR                (MAP_LOAD sem SET_MAP antes)
+
+
+=====================================================================
+ TESTE 7 - ENVIAR UMA FASE DO SITE PARA O ARDUINO (SET_MAP)
+=====================================================================
+Envie UMA LINHA POR VEZ, na ordem. Voce tem ate 10 s entre uma
+linha e outra (senao recebe MAP_ERR e precisa recomecar).
+Enquanto o mapa esta sendo recebido, a matriz fica congelada.
+NAO apague espacos dentro das linhas.
+
+7.1 Fase valida (id 5)
+   Layout:     ########
+               #      #
+               # .$   #     destino em (2,2), caixa em (3,2)
+               #      #
+               #  @   #     jogador em (3,4)
+               #      #
+               #      #
+               ########
+
+>> SET_MAP:5
+>> MAP_ROW:0,########
+>> MAP_ROW:1,#      #
+>> MAP_ROW:2,# .$   #
+>> MAP_ROW:3,#      #
+>> MAP_ROW:4,#  @   #
+>> MAP_ROW:5,#      #
+>> MAP_ROW:6,#      #
+>> MAP_ROW:7,########
+>> MAP_LOAD
+<< MAP_OK
+
+   A matriz passa a mostrar a nova fase. Confira:
+>> SYNC
+<< SYNC:CUSTOM,5,0
+
+7.2 Resolver a fase customizada (empurrar a caixa para a esquerda)
+>> MV:R
+>> MV:U
+>> MV:U
+>> MV:L
+<< WIN:CUSTOM,5
+   (animacao arco-iris)
+<< SYNC:CUSTOM,5,0
+   (fase customizada e reiniciada, nao avanca)
+
+7.3 UNDO e RESET na fase customizada
+>> MV:R
+>> MV:U
+>> UNDO
+>> SYNC
+<< SYNC:CUSTOM,5,1
+>> RESET
+>> SYNC
+<< SYNC:CUSTOM,5,0
+
+7.4 Alternar entre fase nativa e customizada
+>> SET_LEVEL:1
+<< LEVEL_OK
+>> SYNC
+<< SYNC:NATIVE,1,0
+>> SET_LEVEL:CUSTOM
+<< LEVEL_OK
+>> SYNC
+<< SYNC:CUSTOM,5,0
+   (a fase customizada continua guardada no Uno; so some se for
+    substituida por outro SET_MAP valido)
+
+   Ligar/desligar a chave D9 volta para a fase NATIVE 1.
+
+7.5 Mapas INVALIDOS (todos devem terminar em MAP_ERR)
+
+   a) Sem jogador:
+>> SET_MAP:6
+>> MAP_ROW:0,########
+>> MAP_ROW:1,#      #
+>> MAP_ROW:2,# .$   #
+>> MAP_ROW:3,#      #
+>> MAP_ROW:4,#      #
+>> MAP_ROW:5,#      #
+>> MAP_ROW:6,#      #
+>> MAP_ROW:7,########
+>> MAP_LOAD
+<< MAP_ERR
+
+   b) Linha com tamanho errado (7 caracteres):
+>> SET_MAP:6
+>> MAP_ROW:0,#######
+>> MAP_ROW:1,#      #
+>> MAP_ROW:2,# .$   #
+>> MAP_ROW:3,#      #
+>> MAP_ROW:4,#  @   #
+>> MAP_ROW:5,#      #
+>> MAP_ROW:6,#      #
+>> MAP_ROW:7,########
+>> MAP_LOAD
+<< MAP_ERR
+
+   c) Faltando linhas (envie so 3 linhas e depois MAP_LOAD):
+>> SET_MAP:6
+>> MAP_ROW:0,########
+>> MAP_ROW:1,#      #
+>> MAP_ROW:2,#  @   #
+>> MAP_LOAD
+<< MAP_ERR
+
+   d) Caractere invalido (letra X):
+>> SET_MAP:6
+>> MAP_ROW:0,########
+>> MAP_ROW:1,#  X   #
+>> MAP_ROW:2,#  @   #
+>> MAP_ROW:3,#      #
+>> MAP_ROW:4,#      #
+>> MAP_ROW:5,#      #
+>> MAP_ROW:6,#      #
+>> MAP_ROW:7,########
+>> MAP_LOAD
+<< MAP_ERR
+
+   e) Dois jogadores:
+>> SET_MAP:6
+>> MAP_ROW:0,########
+>> MAP_ROW:1,#@     #
+>> MAP_ROW:2,# .$   #
+>> MAP_ROW:3,#      #
+>> MAP_ROW:4,#  @   #
+>> MAP_ROW:5,#      #
+>> MAP_ROW:6,#      #
+>> MAP_ROW:7,########
+>> MAP_LOAD
+<< MAP_ERR
+
+   f) Timeout: envie so "SET_MAP:6", espere ~10 s sem digitar nada.
+<< MAP_ERR   (o mapa e descartado e a matriz volta a atualizar)
+
+   Em todos os casos de erro, a fase que estava ativa ANTES continua
+   intacta (o mapa novo so e aplicado se for totalmente valido).
+
+
+=====================================================================
+ TESTE 8 - BOTOES FISICOS (olhe o Monitor Serial)
+=====================================================================
+Comece com RESET (ou fase recem-carregada).
+
+8.1 Movimento simples
+   Aperte e solte CIMA uma vez.
+<< MV:U
+   Aperte DIREITA, ESQUERDA, BAIXO: devem sair MV:R, MV:L, MV:D
+   (uma unica linha por aperto, mesmo segurando 1 s).
+   Movimentos bloqueados (parede) nao enviam nada.
+
+8.2 Segurar CIMA por 1 s
+   -> um unico "MV:U" (nao repete enquanto segura).
+
+8.3 Desfazer pelos botoes
+   Faca alguns movimentos validos (ex.: DIREITA, DIREITA).
+   Segure CIMA + BAIXO ao mesmo tempo por 3 segundos.
+<< CMD:UNDO
+   O ultimo passo e desfeito na matriz e a fase NAO reinicia.
+   Nao repete enquanto continuar segurando; solte pelo menos um
+   botao e segure de novo para desfazer mais um passo.
+   Obs.: o primeiro botao apertado do combo ainda gera um "MV:" no
+   instante em que e pressionado (comportamento esperado).
+
+8.4 Reset pelos botoes
+   Segure SO o CIMA por 5 segundos.
+<< MV:U                   (no instante do aperto)
+<< CMD:RESET              (ao completar 5 s)
+   A fase reinicia. Nao repete ate soltar o CIMA.
+
+8.5 Chave D9
+   Desligue a chave:
+<< INFO:Chave OFF -> Sistema pausado.
+   Matriz apaga. Nesse estado SYNC e GET_MAP ainda respondem,
+   mas MV/UNDO/RESET sao ignorados e MAP_LOAD retorna MAP_ERR.
+   Ligue a chave:
+<< INFO:Chave ON -> Jogo iniciado do zero.
+<< SYNC:NATIVE,1,0
+
+
+=====================================================================
+ TESTE 9 - ESPELHAMENTO (botao fisico <-> Serial)
+=====================================================================
+1. Aperte um botao fisico: o Monitor mostra "MV:<dir>".
+2. NAO precisa digitar esse MV de volta: o Arduino ja executou o
+   movimento. Se voce enviar, ele executa DE NOVO (anda 2x).
+3. Compare as contagens: depois de N movimentos validos (fisicos ou
+   serial) um SYNC deve mostrar N no terceiro campo, e cada UNDO
+   diminui 1.
+
+
+=====================================================================
+ SOLUCAO DE PROBLEMAS
+=====================================================================
+- Nada responde:      confira 115200 baud e fim de linha "Newline".
+- Caracteres estranhos: baud rate errado.
+- Matriz apagada:     chave D9 desligada (ou pino flutuando).
+- Jogador anda "deitado"/invertido: ajuste mapLED() no .ino.
+- MAP_ERR inesperado: confira 8 caracteres por linha, espacos
+                      preservados, um unico jogador, ids de linha 0-7.
+- Reiniciou sozinho:  abrir/fechar o Monitor Serial reseta o Uno.

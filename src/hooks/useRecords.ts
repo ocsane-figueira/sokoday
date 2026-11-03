@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import type { LevelProgress, LevelRecord } from '../game/types';
 
 // RNF04 — persistência local do progresso do jogador (localStorage).
-const STORAGE_KEY = 'sokoban:progress:v1';
+const STORAGE_KEY = 'sokoban:progress:v2';
 
 type ProgressMap = Record<string, LevelProgress>;
 

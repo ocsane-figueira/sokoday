@@ -1,45 +1,52 @@
 import type { LevelDefinition } from './types';
 
-// Níveis de exemplo para validar a interface (etapa 1 — sem resolução automática/A*).
-// Todos foram verificados manualmente e possuem solução.
+// Níveis de exemplo padronizados para matriz fixa 8x8.
+// Todos os níveis possuem 8 linhas de 8 caracteres, preenchidos com espaços nas bordas quando necessário.
 export const LEVELS: LevelDefinition[] = [
   {
-    id: 'nivel-1',
+    id: 'LVL:1',
     name: 'Primeiro Empurrão',
     rows: [
-      '#####',
-      '#@$.#',
-      '#####',
+      '        ',
+      '        ',
+      ' #####  ',
+      ' #@$.#  ',
+      ' #####  ',
+      '        ',
+      '        ',
+      '        ',
     ],
   },
   {
-    id: 'nivel-2',
+    id: 'LVL:2',
     name: 'Contorno',
     rows: [
-      '#######',
-      '#     #',
-      '#  $  #',
-      '#     #',
-      '#  .  #',
-      '#     #',
-      '#  @  #',
-      '#######',
+      '####### ',
+      '#     # ',
+      '#  $  # ',
+      '#     # ',
+      '#  .  # ',
+      '#     # ',
+      '#  @  # ',
+      '####### ',
     ],
   },
   {
-    id: 'nivel-3',
+    id: 'LVL:3',
     name: 'Canto da Sala',
     rows: [
-      '######',
-      '#.   #',
-      '# $  #',
-      '#  @ #',
-      '#    #',
-      '######',
+      '        ',
+      ' ###### ',
+      ' #.   # ',
+      ' # $  # ',
+      ' #  @ # ',
+      ' #    # ',
+      ' ###### ',
+      '        ',
     ],
   },
   {
-    id: 'nivel-4',
+    id: 'LVL:4',
     name: 'Par Simétrico',
     rows: [
       '########',
@@ -49,10 +56,11 @@ export const LEVELS: LevelDefinition[] = [
       '# .  . #',
       '#   @  #',
       '########',
+      '        ',
     ],
   },
   {
-    id: 'nivel-5',
+    id: 'LVL:5',
     name: 'Linha Dupla',
     rows: [
       '########',
@@ -62,10 +70,11 @@ export const LEVELS: LevelDefinition[] = [
       '#  @   #',
       '#   .  #',
       '########',
+      '        ',
     ],
   },
   {
-    id: 'nivel-6',
+    id: 'LVL:6',
     name: 'Desvio Central',
     rows: [
       '########',
@@ -75,10 +84,11 @@ export const LEVELS: LevelDefinition[] = [
       '#   .@ #',
       '#      #',
       '########',
+      '        ',
     ],
   },
   {
-    id: 'nivel-7',
+    id: 'LVL:7',
     name: 'O Corredor',
     rows: [
       '########',
@@ -92,7 +102,7 @@ export const LEVELS: LevelDefinition[] = [
     ],
   },
   {
-    id: 'nivel-8',
+    id: 'LVL:8',
     name: 'Labirinto em L',
     rows: [
       '########',
@@ -106,7 +116,7 @@ export const LEVELS: LevelDefinition[] = [
     ],
   },
   {
-    id: 'nivel-9',
+    id: 'LVL:9',
     name: 'Cruzamento',
     rows: [
       '########',
@@ -120,7 +130,7 @@ export const LEVELS: LevelDefinition[] = [
     ],
   },
   {
-    id: 'nivel-10',
+    id: 'LVL:10',
     name: 'Pequeno Labirinto',
     rows: [
       '########',
@@ -130,10 +140,11 @@ export const LEVELS: LevelDefinition[] = [
       '#  $   #',
       '#  @   #',
       '########',
+      '        ',
     ],
   },
   {
-    id: 'nivel-11',
+    id: 'LVL:11',
     name: 'Bloqueio Duplo',
     rows: [
       '########',
@@ -147,7 +158,7 @@ export const LEVELS: LevelDefinition[] = [
     ],
   },
   {
-    id: 'nivel-12',
+    id: 'LVL:12',
     name: 'Quatro Pilares',
     rows: [
       '########',
@@ -159,8 +170,9 @@ export const LEVELS: LevelDefinition[] = [
       '#. @  .#',
       '########',
     ],
-  }
+  },
 ];
+
 export function getLevelIndexById(id: string): number {
   return LEVELS.findIndex((level) => level.id === id);
 }
