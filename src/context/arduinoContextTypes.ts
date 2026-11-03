@@ -26,6 +26,7 @@ export interface ArduinoContextValue {
   fetchArduinoNativeLevels: () => Promise<LevelDefinition[]>;
   sendLevelToUno: (level: LevelDefinition) => Promise<boolean>;
   setLevelOnUno: (levelId: number | 'CUSTOM') => Promise<void>;
+  resetLevelOnUno: (level: LevelDefinition) => Promise<void>;
   notifyMove: (dir: Direction) => Promise<void>;
   notifyUndo: () => Promise<void>;
   notifyReset: () => Promise<void>;

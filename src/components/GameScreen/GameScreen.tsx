@@ -13,8 +13,8 @@ import { SolutionModal } from '../Modal/SolutionModal.tsx';
 import { Header } from '../Header/Header.tsx';
 import './GameScreen.css';
 
-/** Intervalo entre os movimentos executados automaticamente pela solução. */
-const AUTO_PLAY_STEP_MS = 250;
+/** Intervalo entre os movimentos executados automaticamente pela solução (450ms para sincronia perfeita com a matriz LED). */
+const AUTO_PLAY_STEP_MS = 450;
 
 const KEY_MAP: Record<string, Direction> = {
   ArrowUp: 'up',
@@ -60,7 +60,7 @@ export function GameScreen({
     null,
   );
 
-  const { notifyMove, notifyUndo, notifyReset, subscribeToGameEvents } = useArduino();
+  const { notifyMove, notifyUndo, resetLevelOnUno, subscribeToGameEvents } = useArduino();
   const isExternalMoveRef = useRef(false);
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function GameScreen({
     [handleMove, notifyMove],
   );
 
-  // Reinício com notificação serial
+  // Reinício que garante que o Arduino carregue estritamente a fase em exibição
   const handleRestart = useCallback(() => {
     setAutoPlayQueue(null);
     restart();
@@ -112,8 +112,8 @@ export function GameScreen({
 
   const handleUserRestart = useCallback(() => {
     handleRestart();
-    notifyReset();
-  }, [handleRestart, notifyReset]);
+    resetLevelOnUno(level);
+  }, [handleRestart, resetLevelOnUno, level]);
 
   // Desfazer com notificação serial
   const handleUndo = useCallback(() => {
@@ -282,8 +282,15 @@ export function GameScreen({
           onClose={() => setActiveModal(null)}
           onApplySolution={(directions, options) => {
             setActiveModal(null);
-            if (options?.restartFirst) handleUserRestart();
-            setAutoPlayQueue(directions);
+            if (options?.restartFirst) {
+              handleUserRestart();
+              // Pausa de 500ms para o Arduino completar o reset e desenhar o mapa inicial na matriz
+              window.setTimeout(() => {
+                setAutoPlayQueue(directions);
+              }, 500);
+            } else {
+              setAutoPlayQueue(directions);
+            }
           }}
         />
       )}

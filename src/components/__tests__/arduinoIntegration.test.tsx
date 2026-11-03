@@ -211,6 +211,37 @@ describe('Integração Web <-> Arduino Uno', () => {
       expect(sendCommandSpy).toHaveBeenCalledWith('RESET');
     });
 
+    it('tecla R ou repetir em nível do Arduino (UNO:2) envia SET_LEVEL:2', async () => {
+      const sendCommandSpy = vi.spyOn(arduinoSerial, 'sendCommand').mockResolvedValue(undefined);
+      vi.spyOn(arduinoSerial, 'isConnected').mockReturnValue(true);
+
+      const { DEFAULT_ARDUINO_LEVELS } = await import('../../game/arduinoLevelAdapter');
+      const { GameScreen } = await import('../GameScreen/GameScreen');
+
+      render(
+        <ArduinoProvider initialStatus="connected">
+          <GameScreen
+            level={DEFAULT_ARDUINO_LEVELS[1]}
+            levelNumber={2}
+            totalLevels={4}
+            completedCount={0}
+            hasNextLevel={true}
+            getProgress={() => mockProgress}
+            recordCompletion={() => {}}
+            getRankings={() => ({ byTime: [], byMoves: [] })}
+            onBackToLevels={() => {}}
+            onNextLevel={() => {}}
+          />
+        </ArduinoProvider>,
+      );
+
+      // Pressiona R
+      await act(async () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+      });
+      expect(sendCommandSpy).toHaveBeenCalledWith('SET_LEVEL:2');
+    });
+
     it('movimento físico do Uno (MV:R) não gera eco de volta pela Serial', async () => {
       const sendCommandSpy = vi.spyOn(arduinoSerial, 'sendCommand').mockResolvedValue(undefined);
       vi.spyOn(arduinoSerial, 'isConnected').mockReturnValue(true);

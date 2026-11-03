@@ -140,6 +140,7 @@ const char DIR_CHAR[4] = { 'U', 'D', 'L', 'R' };
 bool isPowered = false;
 uint8_t pulseCounter = 0;
 uint32_t lastFrameMs = 0;
+bool pcConnected = false;
 
 // Animacao de vitoria (nao bloqueante)
 bool winAnimating = false;
@@ -311,6 +312,10 @@ void dumpState() {
 // PROTOCOLO: CARGA DE FASE REMOTA (SET_MAP)
 // ==========================================
 void beginSetMap(int id) {
+  if (winAnimating) {
+    winAnimating = false;
+    strip.setBrightness(BRIGHTNESS);
+  }
   receivingMap = true;
   stagingId = (id < 0) ? 0 : (uint16_t)id;
   stagingRows = 0;
@@ -356,9 +361,13 @@ void handleMapRow(const char* p) {
 // SET_LEVEL:CUSTOM  -> volta para a ultima fase remota enviada (SET_MAP)
 // Reinicia a fase (movimentos zerados, historico limpo). Sem eco de MV.
 void setLevelCmd(const char* arg) {
-  if (!isPowered || winAnimating || receivingMap) {
+  if (!isPowered || receivingMap) {
     Serial.println(F("LEVEL_ERR"));
     return;
+  }
+  if (winAnimating) {
+    winAnimating = false;
+    strip.setBrightness(BRIGHTNESS);
   }
   if (strcmp_P(arg, PSTR("CUSTOM")) == 0) {
     if (!hasCustomMap) {
@@ -517,6 +526,8 @@ bool undoMove(bool fromButton) {
 // DISPATCH DE COMANDOS SERIAIS
 // ==========================================
 void dispatchCommand(char* buf) {
+  pcConnected = true;
+
   if (strcmp_P(buf, PSTR("SYNC")) == 0) {
     sendSync();
   } else if (strncmp_P(buf, PSTR("SET_LEVEL:"), 10) == 0) {
@@ -532,11 +543,29 @@ void dispatchCommand(char* buf) {
   } else if (strcmp_P(buf, PSTR("MAP_LOAD")) == 0) {
     commitMap();
   } else if (strncmp_P(buf, PSTR("MV:"), 3) == 0) {
-    if (isPowered && !winAnimating && !receivingMap) movePlayer(buf[3], true);   // sem eco
+    if (isPowered && !receivingMap) {
+      if (winAnimating) {
+        winAnimating = false;
+        strip.setBrightness(BRIGHTNESS);
+      }
+      movePlayer(buf[3], true);   // sem eco
+    }
   } else if (strcmp_P(buf, PSTR("UNDO")) == 0) {
-    if (isPowered && !winAnimating && !receivingMap) undoMove(false);
+    if (isPowered && !receivingMap) {
+      if (winAnimating) {
+        winAnimating = false;
+        strip.setBrightness(BRIGHTNESS);
+      }
+      undoMove(false);
+    }
   } else if (strcmp_P(buf, PSTR("RESET")) == 0) {
-    if (isPowered && !winAnimating && !receivingMap) reloadCurrentLevel();
+    if (isPowered && !receivingMap) {
+      if (winAnimating) {
+        winAnimating = false;
+        strip.setBrightness(BRIGHTNESS);
+      }
+      reloadCurrentLevel();
+    }
   }
   // Comandos desconhecidos sao ignorados.
 }
@@ -723,8 +752,10 @@ void stepWinAnimation() {
   if (winJ >= 256 * 3) {
     winAnimating = false;
     strip.setBrightness(BRIGHTNESS);
-    // Fases nativas avancam; fase remota e reiniciada
-    if (isCustomMap) {
+    // Se conectado ao site ou em fase remota, mantem o nivel atual para aguardar
+    // a decisao do jogador no site (repetir a fase ou avancar para o proximo nivel).
+    // No modo puramente standalone (sem PC), avanca automaticamente para a proxima fase.
+    if (isCustomMap || pcConnected) {
       reloadCurrentLevel();
     } else {
       loadLevel((currentLevel + 1) % TOTAL_LEVELS, SRC_NATIVE);

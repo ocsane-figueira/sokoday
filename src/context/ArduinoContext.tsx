@@ -294,6 +294,22 @@ export function ArduinoProvider({
     setUnoMoves(0);
   }, []);
 
+  const resetLevelOnUno = useCallback(
+    async (level: LevelDefinition) => {
+      if (!arduinoSerial.isConnected()) return;
+      if (level.id.startsWith('UNO:')) {
+        const numId = extractNumericLevelId(level.id);
+        await arduinoSerial.sendCommand(`SET_LEVEL:${numId}`);
+        setActiveSource('NATIVE');
+        setActiveLevelId(String(numId));
+      } else {
+        await arduinoSerial.sendCommand('RESET');
+      }
+      setUnoMoves(0);
+    },
+    [],
+  );
+
   const notifyMove = useCallback(async (dir: Direction) => {
     if (!arduinoSerial.isConnected()) return;
     const unoDir = directionToUno(dir);
@@ -335,6 +351,7 @@ export function ArduinoProvider({
     fetchArduinoNativeLevels,
     sendLevelToUno,
     setLevelOnUno,
+    resetLevelOnUno,
     notifyMove,
     notifyUndo,
     notifyReset,
