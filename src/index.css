@@ -1,0 +1,108 @@
+:root {
+  --color-bg: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-header: #0f172a;
+  --color-header-text: #f8fafc;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-text: #ffffff;
+
+  --color-board-bg: #0f172a;
+  --color-wall: #1e293b;
+  --color-floor: #e2e8f0;
+  --color-target: #94a3b8;
+  --color-box: #b45309;
+  --color-box-border: #78350f;
+  --color-box-done: #16a34a;
+  --color-box-done-border: #14532d;
+  --color-player: #2563eb;
+  --color-wall-line: #0f172a;
+
+  /* Paleta dos sprites em pixel art (src/components/Sprites.tsx) */
+  --sprite-box-frame: #78350f;
+  --sprite-box-plank: #d97706;
+  --sprite-box-face: #b45309;
+  --sprite-box-done-frame: #14532d;
+  --sprite-box-done-plank: #4ade80;
+  --sprite-box-done-face: #16a34a;
+
+  --sprite-hair: #4a2c14;
+  --sprite-skin: #f2c396;
+  --sprite-eye: #1e293b;
+  --sprite-mouth: #a3492a;
+  --sprite-shirt: #2563eb;
+  --sprite-pants: #1e3a8a;
+  --sprite-shoes: #422006;
+
+  color-scheme: light;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.btn--ghost-inverse {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--color-header-text);
+}
+
+.btn--ghost-inverse:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn--block {
+  width: 100%;
+}
